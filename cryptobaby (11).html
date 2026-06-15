@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>CryptoLuluBaby 💰</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#05020f;touch-action:manipulation;}
+body{position:fixed;inset:0;font-family:ui-rounded,"SF Pro Rounded",system-ui,sans-serif;color:#e7ecff;user-select:none;}
+canvas#stage{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;}
+#ui{position:fixed;inset:0;z-index:2;pointer-events:none;}
+.ctl{pointer-events:auto;}
+@keyframes bob{from{transform:translateY(0) scale(1)}to{transform:translateY(-15px) scale(1.1)}}
+@keyframes pulse{from{box-shadow:0 0 20px #ff000088}to{box-shadow:0 0 50px #ff0000cc,0 0 80px #ff000044}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+
+
+/* AUTH SCREEN */
+#auth-screen{position:fixed;inset:0;z-index:90;background:rgba(4,3,18,.98);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+#auth-screen .logo{font-size:48px;margin-bottom:12px;}
+#auth-screen h2{font-size:22px;font-weight:900;color:#ffd54a;margin-bottom:4px;letter-spacing:2px;}
+#auth-screen .sub{font-size:12px;color:#445;margin-bottom:28px;text-align:center;line-height:1.6;}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;background:rgba(124,95,255,.1);border-radius:10px;padding:4px;}
+.auth-tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:700;color:#667;border-radius:8px;transition:all .2s;}
+.auth-tab.on{background:rgba(124,95,255,.4);color:#fff;}
+.auth-box{width:100%;max-width:340px;}
+.flabel{font-size:10px;color:#8899bb;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;margin-top:12px;}
+.finput{width:100%;background:rgba(0,0,0,.45);border:1px solid rgba(140,100,255,.4);border-radius:10px;padding:13px 16px;color:#e7ecff;font-size:15px;outline:none;margin-bottom:4px;}
+.finput:focus{border-color:#7c5fff;box-shadow:0 0 0 3px rgba(124,95,255,.2);}
+.auth-btn{width:100%;height:50px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c5fff,#ff45b5);color:#fff;font-size:16px;font-weight:900;cursor:pointer;margin-top:16px;letter-spacing:.5px;}
+.auth-err{font-size:12px;color:#ff6060;margin-top:8px;text-align:center;min-height:18px;}
+
+/* TOP */
+#topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:14px 14px 0;gap:10px;}
+.hud{background:rgba(8,6,24,.82);border:1px solid rgba(140,100,255,.35);border-radius:14px;padding:10px 14px;backdrop-filter:blur(14px);}
+#hud-profit .pl{font-size:9px;letter-spacing:2px;color:#9b7fff;text-transform:uppercase;}
+#hud-profit .pv{font-size:24px;font-weight:900;color:#5dffa6;line-height:1;margin:2px 0;font-family:ui-monospace,monospace;text-shadow:0 0 18px rgba(93,255,166,.6);}
+#hud-profit .ps{font-size:10px;color:#6effb0;}
+#hud-inv{text-align:right;}
+#hud-inv .il{font-size:9px;letter-spacing:2px;color:#ff9f5a;text-transform:uppercase;}
+#hud-inv .iv{font-size:24px;font-weight:900;color:#ffd54a;line-height:1;margin:2px 0;font-family:ui-monospace,monospace;}
+#hud-inv .is{font-size:10px;color:#ffb570;}
+
+/* BADGE */
+#badge{position:absolute;bottom:calc(230px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:rgba(8,6,24,.85);border:2px solid #7c5fff;border-radius:999px;padding:9px 24px;font-size:14px;font-weight:900;letter-spacing:3px;text-transform:uppercase;white-space:nowrap;backdrop-filter:blur(8px);transition:color .4s,border-color .4s,box-shadow .4s;text-align:center;}
+#badge .cd{display:block;font-size:11px;letter-spacing:1px;color:#9ab;font-weight:600;margin-top:3px;font-family:ui-monospace,monospace;}
+
+/* BOTTOM */
+#bottom{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:min(540px,100%);background:rgba(8,6,24,.94);border:1px solid rgba(140,100,255,.4);border-bottom:none;border-radius:22px 22px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px));backdrop-filter:blur(20px);}
+#plans{display:flex;gap:10px;margin-bottom:14px;}
+.plan{flex:1;border-radius:14px;padding:14px 10px;cursor:pointer;text-align:center;border:2px solid rgba(124,95,255,.3);background:rgba(124,95,255,.08);transition:all .2s;}
+.plan:hover{border-color:rgba(124,95,255,.7);}
+.plan.selected{border-color:#7c5fff;background:rgba(124,95,255,.25);box-shadow:0 0 20px rgba(124,95,255,.3);}
+.plan .ptag{font-size:9px;letter-spacing:2px;color:#9b7fff;text-transform:uppercase;margin-bottom:4px;}
+.plan .prate{font-size:28px;font-weight:900;color:#ffd54a;line-height:1;}
+.plan .prange{font-size:10px;color:#8899bb;margin-top:4px;line-height:1.4;}
+.plan .pbadge{display:inline-block;margin-top:6px;background:rgba(93,255,166,.15);color:#5dffa6;font-size:9px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:999px;}
+.input-row{display:flex;gap:8px;margin-bottom:12px;}
+.amt-wrap{flex:1;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.45);border:1px solid rgba(140,100,255,.4);border-radius:12px;padding:0 16px;height:52px;transition:border-color .15s;}
+.amt-wrap:focus-within{border-color:#7c5fff;box-shadow:0 0 0 3px rgba(124,95,255,.2);}
+.amt-wrap .sym{color:#ffd54a;font-weight:800;font-size:16px;}
+.amt-wrap input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-size:20px;font-weight:700;font-family:ui-monospace,monospace;}
+.amt-wrap input::placeholder{color:#3a3558;}
+#investBtn{height:52px;padding:0 22px;border:none;border-radius:12px;cursor:pointer;font-size:16px;font-weight:900;color:#0a0712;background:linear-gradient(135deg,#7c5fff,#ff45b5);box-shadow:0 6px 24px rgba(124,95,255,.5);transition:transform .08s;white-space:nowrap;}
+#investBtn:active{transform:scale(.96);}
+.mini-row{display:flex;gap:6px;margin-bottom:12px;}
+.mbtn{flex:1;height:36px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#8899bb;font-size:11px;cursor:pointer;transition:background .15s;}
+.mbtn:hover{background:rgba(255,255,255,.08);color:#ccc;}
+.bal-row{display:flex;justify-content:space-between;font-size:11px;color:#6a7a9a;margin-bottom:4px;}
+.bal-row b{color:#ffd54a;font-family:ui-monospace,monospace;}
+
+/* TOAST */
+#toast{position:absolute;left:50%;bottom:calc(250px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);background:linear-gradient(135deg,#ffd54a,#ff9f43);color:#0a0712;border-radius:12px;padding:11px 20px;font-size:13px;font-weight:800;white-space:nowrap;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:10;box-shadow:0 8px 28px rgba(0,0,0,.5);}
+#toast.show{opacity:1;transform:translate(-50%,0);}
+
+/* INFO PANEL */
+#info-panel{position:absolute;bottom:calc(235px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(500px,calc(100%-20px));background:rgba(8,6,24,.97);border:1px solid rgba(124,95,255,.45);border-radius:16px;padding:18px;backdrop-filter:blur(16px);display:none;max-height:50vh;overflow-y:auto;}
+#info-panel h2{font-size:15px;font-weight:900;color:#ffd54a;margin-bottom:12px;}
+.iblock{background:rgba(124,95,255,.1);border:1px solid rgba(124,95,255,.2);border-radius:10px;padding:12px;margin-bottom:10px;}
+.iblock h3{font-size:10px;font-weight:800;color:#c4b0ff;letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;}
+.iblock p{font-size:12px;color:#9aaac0;line-height:1.7;}
+.iblock .hl{color:#5dffa6;font-weight:700;}
+.plan-compare{display:flex;gap:8px;margin-top:8px;}
+.pc{flex:1;background:rgba(8,6,24,.6);border-radius:8px;padding:10px;text-align:center;}
+.pc .pcr{font-size:22px;font-weight:900;color:#ffd54a;}
+.pc .pcl{font-size:9px;color:#667;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px;}
+.pc .pcs{font-size:10px;color:#7c5fff;margin-top:3px;}
+
+/* HIST PANEL */
+#hist-panel{position:absolute;bottom:calc(235px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(500px,calc(100%-20px));background:rgba(8,6,24,.97);border:1px solid rgba(93,255,166,.3);border-radius:16px;padding:16px;backdrop-filter:blur(16px);display:none;max-height:50vh;overflow-y:auto;}
+#hist-panel h2{font-size:14px;font-weight:900;color:#5dffa6;margin-bottom:10px;}
+.hrow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(93,255,166,.1);font-size:12px;}
+.hrow:last-child{border:none;}
+.hrow .hw{color:#556;}
+.hrow .ha{color:#5dffa6;font-family:ui-monospace,monospace;font-weight:700;}
+
+/* RETIRO */
+#retiro-panel{position:absolute;inset:0;background:rgba(4,3,18,.98);z-index:40;display:none;flex-direction:column;padding:28px;justify-content:center;}
+#retiro-panel h2{font-size:22px;font-weight:900;color:#ffd54a;margin-bottom:6px;}
+#retiro-panel .sub{font-size:12px;color:#556;margin-bottom:24px;line-height:1.6;}
+.rinfo{background:rgba(124,95,255,.1);border:1px solid rgba(124,95,255,.22);border-radius:10px;padding:13px;margin-bottom:18px;font-size:12px;color:#9aaac0;line-height:1.7;}
+.rinfo b{color:#5dffa6;}
+.btn-row{display:flex;gap:10px;}
+.btn-cancel{flex:1;height:48px;border:1px solid rgba(255,255,255,.15);border-radius:10px;background:transparent;color:#8899bb;font-size:13px;font-weight:700;cursor:pointer;}
+.btn-ok{flex:2;height:48px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c5fff,#ff45b5);color:#fff;font-size:14px;font-weight:900;cursor:pointer;}
+
+/* ADMIN LOGIN */
+#admin-login{position:absolute;inset:0;background:rgba(4,3,18,.99);z-index:60;display:none;flex-direction:column;padding:32px;justify-content:center;align-items:center;}
+#admin-login h2{font-size:22px;font-weight:900;color:#ffd54a;margin-bottom:6px;}
+#admin-login p{font-size:12px;color:#445;margin-bottom:28px;}
+#admin-login input{width:100%;max-width:300px;background:rgba(0,0,0,.5);border:1px solid rgba(124,95,255,.4);border-radius:10px;padding:14px;color:#fff;font-size:16px;font-family:ui-monospace,monospace;outline:none;margin-bottom:12px;text-align:center;}
+#admin-login .aok{width:100%;max-width:300px;height:48px;border:none;border-radius:10px;background:linear-gradient(135deg,#7c5fff,#ff45b5);color:#fff;font-size:15px;font-weight:900;cursor:pointer;margin-bottom:8px;}
+#admin-login .acancel{background:none;border:none;color:#445;font-size:12px;cursor:pointer;text-decoration:underline;}
+
+/* ADMIN PANEL */
+#admin-panel{position:absolute;inset:0;background:rgba(4,3,18,.98);z-index:50;display:none;flex-direction:column;overflow-y:auto;padding:22px;}
+#admin-panel h1{font-size:20px;font-weight:900;color:#ffd54a;margin-bottom:3px;}
+#admin-panel .asub{font-size:11px;color:#445;margin-bottom:18px;}
+.acard{background:rgba(124,95,255,.1);border:1px solid rgba(124,95,255,.3);border-radius:14px;padding:16px;margin-bottom:12px;}
+.acard h3{font-size:10px;font-weight:800;color:#c4b0ff;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.astat{background:rgba(8,6,24,.6);border-radius:8px;padding:10px;text-align:center;}
+.astat .asl{font-size:9px;color:#445;letter-spacing:1px;text-transform:uppercase;}
+.astat .asv{font-size:16px;font-weight:900;color:#ffd54a;margin-top:3px;font-family:ui-monospace,monospace;}
+.arow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(124,95,255,.1);font-size:12px;}
+.arow:last-child{border:none;}
+.arow .al{color:#667;}
+.arow .av{color:#ffd54a;font-family:ui-monospace,monospace;font-weight:700;}
+.ucard{background:rgba(8,6,24,.7);border:1px solid rgba(124,95,255,.2);border-radius:10px;padding:12px;margin-bottom:8px;}
+.ucard .uemail{font-size:12px;font-weight:700;color:#c4b0ff;margin-bottom:6px;}
+.ucard .ugrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.ucard .ustat{text-align:center;}
+.ucard .usl{font-size:9px;color:#445;text-transform:uppercase;letter-spacing:1px;}
+.ucard .usv{font-size:13px;font-weight:700;color:#ffd54a;font-family:ui-monospace,monospace;}
+.wr{background:rgba(8,6,24,.7);border:1px solid rgba(255,96,96,.25);border-radius:10px;padding:12px;margin-bottom:8px;}
+.wr .wri{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;}
+.wr .wru{color:#e7ecff;font-weight:700;}
+.wr .wra{color:#ffd54a;font-family:ui-monospace,monospace;font-weight:900;font-size:14px;}
+.wr .wrw{font-size:10px;color:#7c5fff;font-family:ui-monospace,monospace;margin-bottom:5px;}
+.wr .wrd{font-size:10px;color:#445;}
+.wr .wrbr{display:flex;gap:6px;margin-top:8px;}
+.wbtn{flex:1;height:34px;border:none;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;}
+.wbtn.ok{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;}
+.wbtn.no{background:rgba(255,96,96,.18);border:1px solid rgba(255,96,96,.4);color:#ff6060;}
+.bp{background:rgba(255,160,50,.18);color:#ffb030;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:700;}
+.ba{background:rgba(93,255,166,.15);color:#5dffa6;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:700;}
+.br{background:rgba(255,96,96,.15);color:#ff6060;border-radius:999px;padding:2px 8px;font-size:9px;font-weight:700;}
+.admin-close{height:44px;width:100%;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:transparent;color:#667;font-size:13px;font-weight:700;cursor:pointer;margin-top:6px;}
+.abtn2{height:40px;width:100%;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;margin-bottom:8px;}
+.abtn2.ok{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;}
+.abtn2.danger{background:rgba(255,96,96,.18);border:1px solid rgba(255,96,96,.4);color:#ff6060;}
+.loading{display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;color:#667;padding:16px;}
+.spinner{width:16px;height:16px;border:2px solid #333;border-top-color:#7c5fff;border-radius:50%;animation:spin .8s linear infinite;}
+
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<!-- ENTRY SCREEN - minimal, just to unlock audio -->
+<div id="entry" style="position:fixed;inset:0;z-index:999;background:#0a0414;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="enterApp()">
+  <div style="font-size:72px;margin-bottom:16px;animation:bob 1s infinite alternate;">🍼</div>
+  <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:4px;margin-bottom:6px;">CRYPTOLULUBABY</div>
+  <div style="font-size:12px;color:#7c5fff;letter-spacing:3px;margin-bottom:48px;">INVIERTE · DUERME · GENERA</div>
+  <div style="background:linear-gradient(135deg,#7c5fff,#ff45b5);border-radius:14px;padding:16px 48px;font-size:18px;font-weight:900;color:#fff;letter-spacing:3px;animation:pulse 1.2s infinite alternate;">▶ ENTRAR</div>
+</div>
+<style>
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+@keyframes pulse{from{box-shadow:0 0 20px #7c5fff88}to{box-shadow:0 0 40px #ff45b5cc}}
+</style>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" style="display:none;flex-direction:column;">
+  <div class="logo">🍼</div>
+  <h2>CRYPTOLULUBABY</h2>
+  <p class="sub">Crea tu cuenta para empezar a invertir<br>y generar desde cualquier dispositivo</p>
+  <div class="auth-tabs">
+    <div class="auth-tab on" id="tab-login" onclick="switchTab('login')">Iniciar sesión</div>
+    <div class="auth-tab" id="tab-register" onclick="switchTab('register')">Registrarse</div>
+  </div>
+  <div class="auth-box">
+    <div class="flabel">Correo electrónico</div>
+    <input class="finput" id="auth-email" type="email" placeholder="tucorreo@ejemplo.com"/>
+    <div class="flabel">Contraseña</div>
+    <input class="finput" id="auth-pass" type="password" placeholder="mínimo 6 caracteres"/>
+    <div class="auth-err" id="auth-err"></div>
+    <button class="auth-btn" id="auth-btn" onclick="doAuth()">Iniciar sesión</button>
+  </div>
+</div>
+
+<div id="ui">
+  <div id="topbar">
+    <div class="hud" id="hud-profit">
+      <div class="pl">Ganancia</div>
+      <div class="pv" id="pval">+0.00</div>
+      <div class="ps">USDT acumulado</div>
+    </div>
+    <div class="hud" id="hud-inv">
+      <div class="il">Invertido</div>
+      <div class="iv" id="ival">0.00</div>
+      <div class="is">USDT total</div>
+    </div>
+  </div>
+
+  <div id="badge" class="ctl">LLORANDO<span class="cd" id="cd"></span></div>
+
+  <div id="info-panel" class="ctl">
+    <h2>🍼 ¿Cómo funciona CryptoLuluBaby?</h2>
+    <div class="iblock">
+      <h3>💡 La idea</h3>
+      <p>El bebé llora porque necesita atención. Cuando inviertes USDT, el bebé <span class="hl">se viste completamente y se duerme</span>. Mientras duerme, tu inversión genera rendimiento. En <span class="hl">24 horas</span> recibes tu capital + ganancia automáticamente.</p>
+    </div>
+    <div class="iblock">
+      <h3>📊 Tres planes</h3>
+      <div class="plan-compare">
+        <div class="pc"><div class="pcl">⚡ Rápido</div><div class="pcr" style="color:#22c55e">1%</div><div class="pcs">1 día</div></div>
+        <div class="pc"><div class="pcl">🌙 Medio</div><div class="pcr" style="color:#3b82f6">5%</div><div class="pcs">20 días</div></div>
+        <div class="pc"><div class="pcl">💎 Fuerte</div><div class="pcr" style="color:#a855f7">10%</div><div class="pcs">30 días</div></div>
+      </div>
+    </div>
+    <div class="iblock">
+      <h3>💰 Ejemplos</h3>
+      <p>
+        ⚡ $100 → recibes <span class="hl">$101</span> en 1 día<br>
+        🌙 $100 → recibes <span class="hl">$105</span> en 20 días<br>
+        💎 $100 → recibes <span class="hl">$110</span> en 30 días<br>
+        💎 $1,000 → recibes <span class="hl">$1,100</span> en 30 días
+      </p>
+    </div>
+  </div>
+
+  <div id="hist-panel" class="ctl">
+    <h2>📋 Historial de pagos</h2>
+    <div id="histList"><div style="color:#445;font-size:12px">Sin pagos aún.</div></div>
+  </div>
+
+  <div id="bottom" class="ctl">
+    <div id="plans" style="display:flex;gap:8px;margin-bottom:14px;">
+      <div class="plan selected" id="plan-p1" onclick="selectPlan('p1')">
+        <div class="ptag">⚡ Plan Rápido</div>
+        <div class="prate" style="color:#22c55e;">1%</div>
+        <div class="prange">1 día</div>
+        <div class="pbadge" style="background:rgba(34,197,94,.15);color:#22c55e;">mín $10</div>
+      </div>
+      <div class="plan" id="plan-p2" onclick="selectPlan('p2')">
+        <div class="ptag">🌙 Plan Medio</div>
+        <div class="prate" style="color:#3b82f6;">5%</div>
+        <div class="prange">20 días</div>
+        <div class="pbadge" style="background:rgba(59,130,246,.15);color:#3b82f6;">mín $10</div>
+      </div>
+      <div class="plan" id="plan-p3" onclick="selectPlan('p3')">
+        <div class="ptag">💎 Plan Fuerte</div>
+        <div class="prate" style="color:#a855f7;">10%</div>
+        <div class="prange">30 días</div>
+        <div class="pbadge" style="background:rgba(168,85,247,.15);color:#a855f7;">mín $10</div>
+      </div>
+    </div>
+    <div class="input-row">
+      <label class="amt-wrap">
+        <span class="sym">$</span>
+        <input type="number" id="amtInput" placeholder="cantidad en USDT" min="1" step="0.01"/>
+      </label>
+      <button id="investBtn">💰 INVERTIR</button>
+    </div>
+    <div class="mini-row">
+      <button class="mbtn" id="infoBtn">📖 Cómo funciona</button>
+      <button class="mbtn" id="depositoBtn">💳 Depositar</button>
+      <button class="mbtn" id="histBtn">📋 Historial</button>
+      <button class="mbtn" id="retiroBtn">📤 Retirar</button>
+      <button class="mbtn" id="muteBtn">🔊</button>
+    </div>
+    <div class="bal-row">
+      <span>💳 Depositado: <b id="depDisplay">0.00</b> USDT</span>
+      <span style="color:#5dffa6;font-size:10px;" id="nextInfo"></span>
+    </div>
+    <div class="bal-row">
+      <span>📈 Invertido: <b id="invDisplay">0.00</b> USDT</span>
+      <span style="color:#5dffa6;font-size:11px;" id="balInfo"></span>
+    </div>
+    <div class="bal-row" style="margin-top:4px;">
+      <span style="color:#556;font-size:10px;" id="userEmail">-</span>
+      <button onclick="logout()" style="background:none;border:none;color:#445;font-size:10px;cursor:pointer;text-decoration:underline;">Cerrar sesión</button>
+    </div>
+  </div>
+  <div id="toast"></div>
+</div>
+
+<!-- DEPOSITO -->
+<div id="deposito-panel" style="position:absolute;inset:0;background:rgba(4,3,18,.98);z-index:40;display:none;flex-direction:column;padding:28px;justify-content:center;">
+  <h2 style="font-size:22px;font-weight:900;color:#ffd54a;margin-bottom:6px;">💳 Depositar USDT</h2>
+  <p style="font-size:12px;color:#556;margin-bottom:20px;line-height:1.7;">Envía USDT a nuestra wallet y pega el hash de tu transacción aquí. Verificamos manualmente y acreditamos tu saldo en menos de 24 horas.</p>
+
+  <div style="background:rgba(124,95,255,.1);border:1px solid rgba(124,95,255,.3);border-radius:12px;padding:14px;margin-bottom:18px;">
+    <div style="font-size:9px;color:#9b7fff;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">Wallet de depósito (USDT — Red Solana)</div>
+    <div style="font-size:12px;color:#ffd54a;font-family:ui-monospace,monospace;word-break:break-all;line-height:1.6;">7LwvYCoUSL1DQtAeCAjPdcUFFjRynDfiJ71dU3Dt4RSc</div>
+    <button onclick="copyWallet()" style="margin-top:10px;height:34px;width:100%;border:1px solid rgba(124,95,255,.4);border-radius:8px;background:rgba(124,95,255,.15);color:#c4b0ff;font-size:12px;font-weight:700;cursor:pointer;">📋 Copiar dirección</button>
+  </div>
+
+  <div class="flabel">Cantidad enviada (USDT)</div>
+  <input class="finput" id="dAmt" placeholder="Ej: 100.00" type="number" min="1" step="0.01"/>
+  <div class="flabel">Hash de la transacción</div>
+  <input class="finput" id="dHash" placeholder="0x..." type="text" style="font-family:ui-monospace,monospace;font-size:12px;"/>
+
+  <div style="background:rgba(93,255,166,.08);border:1px solid rgba(93,255,166,.2);border-radius:10px;padding:12px;margin-bottom:18px;font-size:11px;color:#5dffa6;line-height:1.7;">
+    ✅ El hash lo encuentras en tu wallet después de enviar<br>
+    ⏱ Verificación manual en menos de 24 horas<br>
+    🟣 Red: <b>Solana</b> — envía solo USDT-SPL (Solana)<br>
+    ⚠️ No envíes BEP20 ni ERC20 a esta wallet
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-cancel" id="dCancel">Cancelar</button>
+    <button class="btn-ok" id="dOk">Enviar solicitud</button>
+  </div>
+</div>
+
+<!-- RETIRO -->
+<div id="retiro-panel" style="display:none;flex-direction:column;">
+  <h2>📤 Solicitar Retiro</h2>
+  <p class="sub">Ingresa tu wallet y la cantidad. El equipo procesa en máximo 24 horas.</p>
+  <div class="flabel">Tu wallet (BEP20 / ERC20)</div>
+  <input class="finput" id="rWallet" placeholder="0x..." type="text"/>
+  <div class="flabel">Cantidad a retirar (USDT)</div>
+  <input class="finput" id="rAmt" placeholder="0.00" type="number" min="1" step="0.01"/>
+  <div class="rinfo">💡 Ganancias disponibles: <b id="rBalDisplay">0.00 USDT</b><br>📍 Tiempo de proceso: hasta 24h.</div>
+  <div class="btn-row">
+    <button class="btn-cancel" id="rCancel">Cancelar</button>
+    <button class="btn-ok" id="rOk">Solicitar Retiro</button>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="admin-login" style="display:none;flex-direction:column;">
+  <h2>🔐 Panel Admin</h2>
+  <p>Acceso restringido</p>
+  <input type="password" id="aPass" placeholder="Contraseña"/>
+  <button class="aok" id="aLoginBtn">ENTRAR</button>
+  <button class="acancel" id="aLoginCancel">Cancelar</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin-panel" style="display:none;flex-direction:column;">
+  <h1>⚙️ Administración</h1>
+  <p class="asub">CryptoLuluBaby — Panel de control</p>
+  <div class="acard">
+    <h3>📊 Resumen global</h3>
+    <div class="agrid">
+      <div class="astat"><div class="asl">Usuarios</div><div class="asv" id="as-users">0</div></div>
+      <div class="astat"><div class="asl">Total invertido</div><div class="asv" id="as-inv">$0</div></div>
+      <div class="astat"><div class="asl">Total ganancias</div><div class="asv" id="as-profit" style="color:#5dffa6">$0</div></div>
+      <div class="astat"><div class="asl">Retiros pend.</div><div class="asv" id="as-pend" style="color:#ffb030">0</div></div>
+    </div>
+  </div>
+  <div class="acard">
+    <h3>👥 Usuarios</h3>
+    <div id="aUserList"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+  </div>
+  <div class="acard">
+    <h3>💳 Solicitudes de depósito</h3>
+    <div id="aDepList"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+  </div>
+  <div class="acard">
+    <h3>📤 Solicitudes de retiro</h3>
+    <div id="aWList"><div class="loading"><div class="spinner"></div>Cargando...</div></div>
+  </div>
+  <div class="acard">
+    <h3>🔧 Acciones</h3>
+    <button class="abtn2 ok" onclick="adminAddDeposit()">✅ Acreditar depósito a usuario</button>
+    <button class="abtn2 danger" onclick="adminResetUser()">🗑 Resetear usuario</button>
+  </div>
+  <button class="admin-close" onclick="closeAdmin()">← Cerrar panel admin</button>
+</div>
+
+
+
+<script>
+"use strict";
+// ── SUPABASE ──────────────────────────────────────────────────────────────────
+const SUPA_URL='https://fbfxyfdnueqdlrlcroof.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiZnh5ZmRudWVxZGxybGNyb29mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0MDEyNjQsImV4cCI6MjA5Njk3NzI2NH0.vPvvLnmLuWV2IFsStNdYqmFw5Ht8mLe2AdyL0LY_kHk';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+// ── CANVAS ────────────────────────────────────────────────────────────────────
+const cv=document.getElementById('stage'),ctx=cv.getContext('2d');
+let W,H,DPR;
+function resize(){DPR=Math.min(devicePixelRatio||1,2.5);W=innerWidth;H=innerHeight;cv.width=W*DPR|0;cv.height=H*DPR|0;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);}
+addEventListener('resize',resize,{passive:true});resize();
+
+const TAU=Math.PI*2,rand=(a,b)=>a+Math.random()*(b-a),lerp=(a,b,t)=>a+(b-a)*t,
+  clamp=(v,a,b)=>v<a?a:v>b?b:v,ease=t=>t<.5?2*t*t:1-(-2*t+2)**2/2,
+  lerpC=(a,b,t)=>a.map((v,i)=>Math.round(lerp(v,b[i],t))),
+  rgb=c=>`rgb(${c[0]},${c[1]},${c[2]})`,rgba=(c,a)=>`rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const DAY=86400000;
+const PLANES={
+  p1:{name:'Plan Rápido', dias:1,  rate:.01, min:10, color:'#22c55e', icon:'⚡'},
+  p2:{name:'Plan Medio',  dias:20, rate:.05, min:10, color:'#3b82f6', icon:'🌙'},
+  p3:{name:'Plan Fuerte', dias:30, rate:.10, min:10, color:'#a855f7', icon:'💎'},
+};
+function getPlan(id){return PLANES[id]||PLANES.p1;}
+function getPlanDuration(id){return getPlan(id).dias*DAY;}
+const ADMIN_PASS='baby2024admin';
+const WALLET='7LwvYCoUSL1DQtAeCAjPdcUFFjRynDfiJ71dU3Dt4RSc';
+
+let currentUser=null;
+let G={deposited:0,bal:0,inv:0,profit:0,last_pay:0,paid:false,plan:'p1'};
+
+async function loadUserData(){
+  if(!currentUser)return;
+  const {data}=await sb.from('usuarios').select('*').eq('id',currentUser.id).single();
+  if(data){
+    G.deposited=data.deposited||0;
+    G.bal=data.bal||0;
+    G.inv=data.inv||0;
+    G.profit=data.profit||0;
+    G.last_pay=data.last_pay||0;
+    G.paid=data.paid||false;
+    G.plan=data.plan||'p1';
+  } else {
+    // Create user row
+    await sb.from('usuarios').insert({id:currentUser.id,email:currentUser.email});
+  }
+  loadHist();
+  renderUI();
+  if(isInvested()&&!G.paid){fx.mood=1;checkPayout();}
+  if(G.paid)fx.mood=.5;
+}
+
+async function saveUserData(){
+  if(!currentUser)return;
+  await sb.from('usuarios').upsert({
+    id:currentUser.id,email:currentUser.email,
+    deposited:G.deposited,bal:G.bal,inv:G.inv,
+    profit:G.profit,last_pay:G.last_pay,paid:G.paid,plan:G.plan
+  });
+}
+
+async function loadHist(){
+  if(!currentUser)return;
+  const {data}=await sb.from('historial').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(40);
+  const hl=document.getElementById('histList');
+  if(!data||!data.length){hl.innerHTML='<div style="color:#445;font-size:12px">Sin pagos aún.</div>';return;}
+  hl.innerHTML=data.map(h=>{
+    const d=new Date(h.created_at);
+    return`<div class="hrow"><span class="hw">${d.toLocaleDateString('es',{month:'short',day:'numeric'})} ${d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</span><span class="ha">$${fmt(h.amt)} USDT</span></div>`;
+  }).join('');
+}
+
+function isInvested(){return G.inv>=1;}
+const layers=[1,0,0,0,0];
+function syncLayers(){const on=isInvested()?1:0;for(let i=1;i<=4;i++)layers[i]=on;}
+syncLayers();
+const fx={mood:0,payUntil:0};
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+let authMode='login';
+function switchTab(mode){
+  authMode=mode;
+  document.getElementById('tab-login').classList.toggle('on',mode==='login');
+  document.getElementById('tab-register').classList.toggle('on',mode==='register');
+  document.getElementById('auth-btn').textContent=mode==='login'?'Iniciar sesión':'Crear cuenta';
+  document.getElementById('auth-err').textContent='';
+}
+
+async function doAuth(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  const errEl=document.getElementById('auth-err');
+  if(!email||!pass){errEl.textContent='Completa todos los campos';return;}
+  document.getElementById('auth-btn').textContent='Cargando...';
+  document.getElementById('auth-btn').disabled=true;
+  let res;
+  if(authMode==='login'){
+    res=await sb.auth.signInWithPassword({email,password:pass});
+  } else {
+    res=await sb.auth.signUp({email,password:pass});
+  }
+  document.getElementById('auth-btn').disabled=false;
+  document.getElementById('auth-btn').textContent=authMode==='login'?'Iniciar sesión':'Crear cuenta';
+  if(res.error){
+    const msg=res.error.message;
+    if(msg.includes('Invalid login'))errEl.textContent='Correo o contraseña incorrectos';
+    else if(msg.includes('already registered'))errEl.textContent='Este correo ya está registrado';
+    else errEl.textContent=msg;
+    return;
+  }
+  if(authMode==='register'&&res.data?.user&&!res.data.session){
+    errEl.style.color='#5dffa6';
+    errEl.textContent='✅ Revisa tu correo para confirmar tu cuenta';
+    return;
+  }
+  document.getElementById('auth-screen').style.display='none';
+  currentUser=res.data.user||res.data.session?.user;
+  document.getElementById('userEmail').textContent=currentUser?.email||'';
+  await loadUserData();
+  Audio.resume();
+  if(!isInvested())Audio.setMode('cry');
+}
+
+async function logout(){
+  if(!confirm('¿Cerrar sesión?'))return;
+  await sb.auth.signOut();
+  currentUser=null;
+  G={deposited:0,bal:0,inv:0,profit:0,last_pay:0,paid:false,plan:'baby'};
+  fx.mood=0;
+  document.getElementById('auth-screen').style.display='flex';
+  renderUI();
+}
+
+// ── PARTICLES ─────────────────────────────────────────────────────────────────
+const tears=[],coins=[],zzz=[],stars=[];
+const chaosEls=[];
+let _bg={bx:W/2,by:H*.42,R:120};
+
+function initBG(){
+  stars.length=0;chaosEls.length=0;
+  for(let i=0;i<100;i++)stars.push({x:rand(0,W),y:rand(0,H),r:rand(.4,2),ph:rand(0,TAU),sp:rand(.5,2)});
+  const syms=['!!','??','@#!','***','!!!','??!','#@!'];
+  for(let i=0;i<22;i++)chaosEls.push({x:rand(0,W),y:rand(0,H),sym:syms[Math.floor(Math.random()*syms.length)],sz:rand(14,38),rot:rand(-.6,.6),spd:rand(.4,1.8),ph:rand(0,TAU),col:['#ff0000','#ff4400','#ff2200','#cc0000'][Math.floor(Math.random()*4)],type:Math.random()<.4?'line':Math.random()<.5?'sym':'zigzag',x2:rand(0,W),y2:rand(0,H),thick:rand(2,7),pts:Array.from({length:6},()=>({x:rand(-60,60),y:rand(-60,60)}))});
+}
+initBG();addEventListener('resize',initBG,{passive:true});
+
+function emitTear(x,y){if(tears.length>160)return;tears.push({x,y:y+rand(-4,4),vx:rand(-18,18),vy:rand(28,68),r:rand(2,5),lf:0,max:rand(.9,1.6)});}
+function emitCoins(x,y,n=18){for(let i=0;i<n;i++){const a=rand(-Math.PI*.85,-Math.PI*.1),sp=rand(220,520);coins.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,rot:rand(0,TAU),vr:rand(-8,8),r:rand(8,16),lf:0,max:rand(1,1.9)});}}
+function emitZ(x,y){if(zzz.length>30)return;zzz.push({x,y,vx:rand(8,22),vy:rand(-28,-48),rot:rand(-.3,.3),vr:rand(-.4,.4),s:rand(14,32),lf:0,max:rand(2,3.5)});}
+
+function stepParticles(dt,t){
+  for(let i=tears.length-1;i>=0;i--){const p=tears[i];p.lf+=dt;p.vy+=480*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;if(p.lf>p.max||p.y>H)tears.splice(i,1);}
+  for(let i=coins.length-1;i>=0;i--){const c=coins[i];c.lf+=dt;c.vy+=900*dt;c.x+=c.vx*dt;c.y+=c.vy*dt;c.rot+=c.vr*dt;if(c.lf>c.max||c.y>H+40)coins.splice(i,1);}
+  for(let i=zzz.length-1;i>=0;i--){const z=zzz[i];z.lf+=dt;z.x+=z.vx*dt;z.y+=z.vy*dt;z.rot+=z.vr*dt;if(z.lf>z.max)zzz.splice(i,1);}
+}
+
+// ── BG SOUTH PARK ─────────────────────────────────────────────────────────────
+const BGSLP=[[5,7,28],[18,22,70],[80,55,160]];
+function drawBG(t){
+  const m=fx.mood;
+  if(m<.99){
+    const cry=1-m;
+    ctx.fillStyle='#8b0000';ctx.fillRect(0,0,W,H);
+    ctx.save();
+    for(let i=-H;i<W+H;i+=38){const fl=Math.sin(t*8+i*.05)>.7;ctx.strokeStyle=fl?'rgba(255,0,0,.35)':'rgba(180,0,0,.25)';ctx.lineWidth=fl?16:12;ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i+H,H);ctx.stroke();}
+    ctx.restore();
+    ctx.save();ctx.globalAlpha=cry*.7;
+    [{x:W*.15,y:H*.2,r:W*.18},{x:W*.85,y:H*.15,r:W*.14},{x:W*.1,y:H*.75,r:W*.16},{x:W*.9,y:H*.8,r:W*.12},{x:W*.5,y:H*.05,r:W*.22},{x:W*.5,y:H*.95,r:W*.2}].forEach((s,i)=>{const pulse=Math.sin(t*3+i*1.3)*.5+.5;const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*(0.7+pulse*.5));g.addColorStop(0,'rgba(255,0,0,.8)');g.addColorStop(.5,'rgba(200,0,0,.4)');g.addColorStop(1,'rgba(140,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.x,s.y,s.r*(0.7+pulse*.5),0,TAU);ctx.fill();});
+    ctx.restore();
+    ctx.save();
+    chaosEls.forEach(e=>{const pulse=Math.sin(t*e.spd+e.ph);const alpha=cry*(.4+pulse*.3);if(alpha<.05)return;ctx.globalAlpha=alpha;if(e.type==='sym'){ctx.save();ctx.translate(e.x+Math.sin(t*e.spd+e.ph)*12,e.y+Math.cos(t*e.spd*1.3+e.ph)*8);ctx.rotate(e.rot+Math.sin(t*2+e.ph)*.15);ctx.font=`900 ${e.sz*(0.8+pulse*.4)}px Impact,Arial Black,sans-serif`;ctx.fillStyle=e.col;ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=Math.max(1,e.sz*.08);ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeText(e.sym,0,0);ctx.fillText(e.sym,0,0);ctx.restore();}else if(e.type==='line'){ctx.save();ctx.translate(W/2,H*.42);const angle=e.ph+t*e.spd*.15;const len=Math.max(W,H)*(0.5+pulse*.3);ctx.strokeStyle=`rgba(255,${Math.floor(pulse*60)},0,${alpha*.6})`;ctx.lineWidth=e.thick*(0.5+pulse*.8);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(angle)*len,Math.sin(angle)*len);ctx.stroke();ctx.restore();}else{ctx.save();ctx.translate(e.x,e.y);ctx.rotate(e.rot);ctx.strokeStyle=`rgba(255,50,0,${alpha*.7})`;ctx.lineWidth=e.thick;ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(e.pts[0].x,e.pts[0].y);e.pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.stroke();ctx.restore();}});
+    ctx.restore();
+    if(Math.sin(t*13)>.88){ctx.save();ctx.globalAlpha=cry*.18;ctx.fillStyle='#ff2200';ctx.fillRect(0,0,W,H);ctx.restore();}
+    ctx.save();const vg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.2,W/2,H/2,Math.max(W,H)*.85);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(.7,'rgba(0,0,0,.3)');vg.addColorStop(1,'rgba(0,0,0,.88)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);ctx.restore();
+  }
+  if(m>.04){
+    const c0=lerpC([120,0,0],BGSLP[0],m),c1=lerpC([200,0,0],BGSLP[1],m),c2=lerpC([255,20,20],BGSLP[2],m);
+    const g2=ctx.createRadialGradient(W/2,H*.42,W*.04,W/2,H*.42,Math.max(W,H)*.78);
+    g2.addColorStop(0,rgb(c2));g2.addColorStop(.45,rgb(c1));g2.addColorStop(1,rgb(c0));
+    ctx.globalAlpha=m;ctx.fillStyle=g2;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+    for(const s of stars){const tw=Math.sin(t*s.sp+s.ph)*.5+.5;ctx.globalAlpha=m*(.2+tw*.7);ctx.fillStyle='#cce0ff';ctx.beginPath();ctx.arc(s.x,s.y,s.r*(.5+tw*.7),0,TAU);ctx.fill();}ctx.globalAlpha=1;
+    const vg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.8);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');ctx.globalAlpha=m;ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+  }
+}
+
+function drawParticles(){
+  for(const p of tears){const a=clamp(1-p.lf/p.max,0,1);ctx.save();ctx.globalAlpha=a;ctx.fillStyle='rgba(160,220,255,.9)';ctx.beginPath();ctx.moveTo(p.x,p.y-p.r*1.8);ctx.quadraticCurveTo(p.x+p.r*1.1,p.y,p.x,p.y+p.r);ctx.quadraticCurveTo(p.x-p.r*1.1,p.y,p.x,p.y-p.r*1.8);ctx.fill();ctx.restore();}
+  for(const c of coins){const a=clamp(1-c.lf/c.max*.7,0,1);ctx.save();ctx.globalAlpha=a;ctx.translate(c.x,c.y);ctx.rotate(c.rot);const sx=Math.abs(Math.cos(c.rot))*.5+.5;ctx.scale(sx,1);const g=ctx.createLinearGradient(0,-c.r,0,c.r);g.addColorStop(0,'#ffe98a');g.addColorStop(1,'#e09000');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,c.r,0,TAU);ctx.fill();ctx.fillStyle='rgba(0,0,0,.5)';ctx.font=`bold ${c.r*1.3}px monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('$',0,1);ctx.restore();}
+  ctx.globalAlpha=1;
+  for(const z of zzz){const a=clamp(1-z.lf/z.max,0,1);ctx.save();ctx.globalAlpha=a*.9;ctx.translate(z.x,z.y);ctx.rotate(z.rot);ctx.fillStyle='#b0d0ff';ctx.shadowColor='#7aafff';ctx.shadowBlur=8;ctx.font=`900 ${z.s}px ui-rounded,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Z',0,0);ctx.restore();}
+  ctx.globalAlpha=1;
+}
+
+// ── BABY ──────────────────────────────────────────────────────────────────────
+function drawBaby(t,dt){
+  for(let i=1;i<=4;i++){const tgt=isInvested()?1:0;layers[i]=clamp(layers[i]+(tgt-layers[i])*Math.min(1,dt*2.5),0,1);}
+  const S=Math.min(W,H),R=clamp(S*.225,80,380),cx=W/2,cy=H*.36;
+  const m=fx.mood,cry=1-m;
+  const bob=Math.sin(t*9)*.5+.5,breathe=Math.sin(t*1.1)*.5+.5;
+  const bx=cx+(Math.sin(t*41)+Math.sin(t*27))*.5*R*.024*cry;
+  const by=cy-bob*R*.04*cry+Math.sin(t*38)*R*.014*cry;
+  _bg={bx,by,R};
+  const sc=1+breathe*.025*m;
+  const SKIN_CRY=[255,130,120],SKIN_OK=[255,210,185],skin=lerpC(SKIN_CRY,SKIN_OK,m),skinD=skin.map(v=>Math.max(0,v-38)),C_HAIR=[60,38,24];
+  ctx.save();ctx.translate(bx,by);ctx.scale(sc,sc);ctx.rotate(Math.sin(t*6.5)*.014*cry);
+  for(const sg of[-1,1]){ctx.fillStyle=rgb(skin);ctx.beginPath();ctx.ellipse(sg*R*.36,R*1.3,R*.30,R*.38,0,0,TAU);ctx.fill();ctx.fillStyle=rgb(skinD);ctx.beginPath();ctx.ellipse(sg*R*.43,R*1.56,R*.22,R*.14,0,0,TAU);ctx.fill();}
+  {const g=ctx.createLinearGradient(0,R*.5,0,R*1.45);g.addColorStop(0,rgb(skin));g.addColorStop(1,rgb(skinD));ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-R*.58,R*.66);ctx.bezierCurveTo(-R*.78,R*.9,-R*.72,R*1.22,-R*.44,R*1.38);ctx.quadraticCurveTo(0,R*1.56,R*.44,R*1.38);ctx.bezierCurveTo(R*.72,R*1.22,R*.78,R*.9,R*.58,R*.66);ctx.closePath();ctx.fill();}
+  for(const sg of[-1,1]){const sw=(1-m)*Math.sin(t*12+sg)*0.4;ctx.save();ctx.translate(sg*R*.52,R*.78);ctx.rotate(sw*sg+sg*.22);ctx.fillStyle=rgb(skin);ctx.beginPath();ctx.ellipse(sg*R*.14,R*.22,R*.18,R*.33,0,0,TAU);ctx.fill();ctx.beginPath();ctx.arc(sg*R*.22,R*.47,R*.14,0,TAU);ctx.fill();ctx.restore();}
+  {ctx.fillStyle='#f0f4ff';ctx.strokeStyle='rgba(100,140,220,.4)';ctx.lineWidth=R*.012;ctx.beginPath();ctx.moveTo(-R*.52,R*.99);ctx.quadraticCurveTo(-R*.62,R*1.26,-R*.32,R*1.35);ctx.quadraticCurveTo(0,R*1.48,R*.32,R*1.35);ctx.quadraticCurveTo(R*.62,R*1.26,R*.52,R*.99);ctx.quadraticCurveTo(0,R*1.16,-R*.52,R*.99);ctx.closePath();ctx.fill();ctx.stroke();}
+  if(layers[2]>.01){ctx.save();ctx.globalAlpha=layers[2];const top=R*.65+(1-layers[2])*R*.6;ctx.beginPath();ctx.rect(-R*1.2,top,R*2.4,R*2.2);ctx.clip();const g=ctx.createLinearGradient(0,R*.5,0,R*1.45);g.addColorStop(0,'#30d0b8');g.addColorStop(1,'#0888b0');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-R*.58,R*.64);ctx.bezierCurveTo(-R*.78,R*.9,-R*.72,R*1.22,-R*.44,R*1.38);ctx.quadraticCurveTo(0,R*1.56,R*.44,R*1.38);ctx.bezierCurveTo(R*.72,R*1.22,R*.78,R*.9,R*.58,R*.64);ctx.closePath();ctx.fill();ctx.restore();}
+  if(layers[1]>.01){ctx.save();ctx.globalAlpha=layers[1];ctx.translate(0,R*.52+(1-layers[1])*R*.1);ctx.fillStyle='#ff6fa8';ctx.beginPath();ctx.moveTo(-R*.30,0);ctx.quadraticCurveTo(0,R*.16,R*.30,0);ctx.quadraticCurveTo(R*.44,R*.50,0,R*.60);ctx.quadraticCurveTo(-R*.44,R*.50,-R*.30,0);ctx.closePath();ctx.fill();ctx.restore();}
+  if(layers[3]>.01){ctx.save();const rv=ease(clamp(layers[3],0,1));ctx.translate(0,-R*.88);ctx.scale(1,rv);ctx.translate(0,R*.88);const g=ctx.createLinearGradient(0,-R*1.12,0,-R*.52);g.addColorStop(0,'#ff55a0');g.addColorStop(1,'#aa30ff');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-R*.96,-R*.52);ctx.quadraticCurveTo(-R*.78,-R*1.28,0,-R*1.22);ctx.quadraticCurveTo(R*.78,-R*1.28,R*.96,-R*.52);ctx.quadraticCurveTo(0,-R*.68,-R*.96,-R*.52);ctx.closePath();ctx.fill();ctx.fillStyle='rgba(255,255,255,.88)';ctx.beginPath();ctx.ellipse(0,-R*.54,R*.97,R*.14,0,0,TAU);ctx.fill();ctx.restore();}
+  if(layers[4]>.01){ctx.save();const rv=ease(clamp(layers[4],0,1));ctx.beginPath();ctx.rect(-R*1.4,R*1.55-rv*R,R*2.8,R*2.2);ctx.clip();const g=ctx.createLinearGradient(0,R*.6,0,R*1.6);g.addColorStop(0,`rgba(${lerpC([160,130,245],[100,120,255],m).join(',')},1)`);g.addColorStop(1,'#5540cc');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(-R*.76,R*.82);ctx.bezierCurveTo(-R*.96,R*1.18,-R*.82,R*1.52,-R*.5,R*1.62);ctx.quadraticCurveTo(0,R*1.76,R*.5,R*1.62);ctx.bezierCurveTo(R*.82,R*1.52,R*.96,R*1.18,R*.76,R*.82);ctx.closePath();ctx.fill();ctx.restore();}
+  for(const sg of[-1,1]){ctx.fillStyle=rgb(skin);ctx.beginPath();ctx.ellipse(sg*R*.95,R*.06,R*.17,R*.24,0,0,TAU);ctx.fill();}
+  {const hg=ctx.createRadialGradient(-R*.28,-R*.32,R*.18,0,0,R*1.18);hg.addColorStop(0,rgb(skin.map(v=>Math.min(255,v+20))));hg.addColorStop(1,rgb(skinD));ctx.fillStyle=hg;ctx.beginPath();ctx.ellipse(0,0,R,R*.94,0,0,TAU);ctx.fill();}
+  if(cry>.02){ctx.save();ctx.globalAlpha=cry*.55;ctx.fillStyle='rgb(255,70,60)';for(const sg of[-1,1]){ctx.beginPath();ctx.ellipse(sg*R*.46,R*.24,R*.28,R*.22,0,0,TAU);ctx.fill();}ctx.restore();}
+  ctx.strokeStyle=rgb(C_HAIR);ctx.lineWidth=R*.05;ctx.lineCap='round';
+  const hs=Math.sin(t*8)*R*.022*cry;
+  [[-R*.32,-R*.88,-R*.46,-R*1.16,-.2],[-R*.10,-R*.95,-R*.06,-R*1.28,0],[R*.12,-R*.92,R*.28,-R*1.20,.1],[R*.38,-R*.84,R*.54,-R*1.08,.2],[-R*.52,-R*.76,-R*.70,-R*.98,-.1]].forEach(([x0,y0,x1,y1,ox])=>{ctx.beginPath();ctx.moveTo(x0,y0);ctx.quadraticCurveTo((x0+x1)/2+ox*R+hs,(y0+y1)/2-R*.06,x1+hs,y1);ctx.stroke();});
+  ctx.save();ctx.globalAlpha=.58;ctx.fillStyle='rgb(255,110,140)';for(const sg of[-1,1]){ctx.beginPath();ctx.ellipse(sg*R*.47,R*.28,R*.17,R*.13,0,0,TAU);ctx.fill();}ctx.restore();
+  ctx.fillStyle=rgb(skinD);ctx.beginPath();ctx.ellipse(0,R*.12,R*.13,R*.09,0,0,TAU);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.35)';for(const sg of[-1,1]){ctx.beginPath();ctx.ellipse(sg*R*.06,R*.14,R*.035,R*.025,0,0,TAU);ctx.fill();}
+  ctx.strokeStyle=rgb(C_HAIR);ctx.lineWidth=R*.055;
+  for(const sg of[-1,1]){ctx.save();ctx.translate(sg*R*.36,-R*.30);ctx.rotate(-sg*lerp(.52,-.05,m));ctx.beginPath();ctx.moveTo(-R*.16,0);ctx.quadraticCurveTo(0,-R*.06,R*.16,R*.02);ctx.stroke();ctx.restore();}
+  for(const sg of[-1,1]){const ex=sg*R*.35,ey=-R*.06;
+    if(cry>.02){ctx.save();ctx.globalAlpha=cry;ctx.strokeStyle='#3a2018';ctx.lineWidth=R*.06;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(ex-R*.17,ey-R*.02);ctx.quadraticCurveTo(ex,ey-R*.14,ex+R*.17,ey-R*.02);ctx.stroke();ctx.beginPath();ctx.moveTo(ex-R*.14,ey+R*.08);ctx.quadraticCurveTo(ex,ey+R*.01,ex+R*.14,ey+R*.08);ctx.stroke();ctx.restore();}
+    if(m>.02){ctx.save();ctx.globalAlpha=m;ctx.strokeStyle='#3a2018';ctx.lineWidth=R*.052;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(ex-R*.16,ey);ctx.quadraticCurveTo(ex,ey+R*.12,ex+R*.16,ey);ctx.stroke();ctx.restore();}}
+  const openAmt=lerp(.06,(0.42+0.46*Math.abs(Math.sin(t*7.5))),cry),mW=R*.44,mH=R*.56*openAmt,my=R*.44;
+  ctx.fillStyle='#8a1822';ctx.beginPath();ctx.ellipse(0,my,mW,Math.max(R*.04,mH),0,0,TAU);ctx.fill();
+  ctx.fillStyle='#4a0810';ctx.beginPath();ctx.ellipse(0,my+mH*.22,mW*.72,Math.max(R*.02,mH*.66),0,0,TAU);ctx.fill();
+  if(openAmt>.14){ctx.fillStyle='#ff6080';ctx.beginPath();ctx.ellipse(0,my+mH*.62,mW*.54,mH*.36,0,0,TAU);ctx.fill();}
+  ctx.fillStyle=rgba(skin,1);ctx.beginPath();ctx.ellipse(0,my-mH*.92,mW*1.04,Math.max(R*.022,mH*.2),0,0,TAU);ctx.fill();
+  if(m>.6){ctx.save();ctx.globalAlpha=(m-.6)/.4;ctx.translate(0,my);ctx.fillStyle='#ffd54a';ctx.beginPath();ctx.ellipse(0,0,R*.22,R*.13,0,0,TAU);ctx.fill();ctx.strokeStyle='#ff9f30';ctx.lineWidth=R*.03;ctx.beginPath();ctx.arc(0,R*.18,R*.09,0,TAU);ctx.stroke();ctx.restore();}
+  if(m>.5&&Math.sin(t*1.15)>.35){ctx.save();ctx.globalAlpha=(Math.sin(t*1.15)-.35)*.9*m;ctx.strokeStyle='rgba(160,200,255,.9)';ctx.lineWidth=R*.013;const bs=Math.sin(t*1.15)*R*.11+R*.035;ctx.beginPath();ctx.arc(R*.15,R*.16,bs,0,TAU);ctx.stroke();ctx.restore();}
+  ctx.restore();
+  if(cry>.22&&Math.random()<cry*.8){emitTear(bx-R*.34,by-R*.04);emitTear(bx+R*.34,by-R*.04);}
+  if(m>.5&&Math.random()<.06)emitZ(bx+R*.64,by-R*.8);
+}
+
+// ── AUDIO ─────────────────────────────────────────────────────────────────────
+const Audio=(()=>{
+  let cryAudio=null,lulOn=false,lulTmr=null,muted=false,audioMode='silent';
+  let ac=null,master=null;
+  function initAC(){if(ac)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ac=new AC();master=ac.createGain();master.gain.value=muted?0:.9;master.connect(ac.destination);}
+  function initCry(){if(cryAudio)return;cryAudio=new window.Audio('cry.mp3');cryAudio.loop=true;cryAudio.volume=muted?0:.85;cryAudio.preload='auto';cryAudio.load();}
+  function startCry(){if(!cryAudio)initCry();if(cryAudio&&cryAudio.paused){cryAudio.currentTime=0;cryAudio.play().catch(()=>{});}}
+  function stopCry(){if(cryAudio){cryAudio.pause();cryAudio.currentTime=0;}}
+  function startLullaby(){if(lulOn)return;lulOn=true;initAC();if(!ac)return;const mel=[523,659,784,659,587,523,0,587,659,523,440,0],dur=[1,1,1.5,.5,1,1.5,.5,1,1,1,1.5,.5],beat=.44;let i=0;const dly=ac.createDelay();dly.delayTime.value=.26;const fb=ac.createGain();fb.gain.value=.2;const wet=ac.createGain();wet.gain.value=.22;dly.connect(fb).connect(dly);dly.connect(wet).connect(master);function nx(){if(!lulOn||audioMode!=='sleep'){lulOn=false;return;}const f=mel[i%mel.length],d=dur[i%dur.length]*beat;if(f>0){const now=ac.currentTime,o=ac.createOscillator(),s=ac.createOscillator(),g=ac.createGain(),sg=ac.createGain();o.type='triangle';o.frequency.value=f;s.type='sine';s.frequency.value=f/2;g.gain.value=sg.gain.value=0;o.connect(g);s.connect(sg);g.connect(master);g.connect(dly);sg.connect(master);g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(.18,now+.04);g.gain.exponentialRampToValueAtTime(.001,now+d*.95);sg.gain.setValueAtTime(0,now);sg.gain.linearRampToValueAtTime(.08,now+.05);sg.gain.exponentialRampToValueAtTime(.001,now+d*.9);[o,s].forEach(x=>{x.start(now);x.stop(now+d+.06);});}i++;lulTmr=setTimeout(nx,d*1000);}nx();}
+  function stopLullaby(){lulOn=false;if(lulTmr){clearTimeout(lulTmr);lulTmr=null;}}
+  function applyMode(){if(audioMode==='cry'){stopLullaby();startCry();}else if(audioMode==='sleep'){stopCry();startLullaby();}else{stopCry();stopLullaby();}}
+  return{
+    resume(){initAC();if(ac&&ac.state==='suspended')ac.resume();initCry();if(audioMode==='cry')startCry();},
+    setMode(m){if(m===audioMode)return;audioMode=m;applyMode();},
+    coin(){initAC();if(!ac)return;const now=ac.currentTime;[880,1320,1760].forEach((f,k)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=f;g.gain.value=0;o.connect(g).connect(master);const ts=now+k*.07;g.gain.setValueAtTime(0,ts);g.gain.linearRampToValueAtTime(.18,ts+.01);g.gain.exponentialRampToValueAtTime(.001,ts+.18);o.start(ts);o.stop(ts+.2);});},
+    reward(){initAC();if(!ac)return;const now=ac.currentTime;[523,659,784,1047,1319].forEach((f,k)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';g.gain.value=0;o.frequency.value=f;o.connect(g).connect(master);const ts=now+k*.1;g.gain.setValueAtTime(0,ts);g.gain.linearRampToValueAtTime(.22,ts+.02);g.gain.exponentialRampToValueAtTime(.001,ts+.4);o.start(ts);o.stop(ts+.45);});},
+    toggleMute(){muted=!muted;if(master)master.gain.value=muted?0:.9;if(cryAudio)cryAudio.volume=muted?0:.85;return muted;}
+  };
+})();
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+const fmt=n=>parseFloat(n||0).toLocaleString('es',{minimumFractionDigits:2,maximumFractionDigits:2});
+let toastT=null;
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+
+function stateLabel(){const now=Date.now();if(now<fx.payUntil)return'PAYOUT';if(G.paid)return'PAGADO';if(isInvested())return'DURMIENDO';return'LLORANDO';}
+const SC={LLORANDO:'#ff7060',DURMIENDO:'#8fb8ff',PAYOUT:'#5dffa6',PAGADO:'#a855f7'};
+
+function renderUI(){
+  $('pval').textContent='+'+fmt(G.profit);
+  $('ival').textContent=fmt(G.inv);
+  $('depDisplay').textContent=fmt(G.deposited);
+  $('invDisplay').textContent=fmt(G.inv);
+  $('balInfo').textContent=G.bal>0?`💰 Ganancias: $${fmt(G.bal)}`:'';
+  const canInvest=G.deposited>0&&!G.paid&&G.inv===0;
+  $('investBtn').disabled=!canInvest;
+  $('investBtn').style.opacity=canInvest?'1':'.45';
+  $('investBtn').style.cursor=canInvest?'pointer':'not-allowed';
+  const lbl=stateLabel(),badge=$('badge');
+  badge.firstChild.textContent=lbl;badge.style.color=SC[lbl];badge.style.borderColor=SC[lbl]+'88';badge.style.boxShadow=`0 0 24px ${SC[lbl]}55`;
+  const cd=$('cd'),ni=$('nextInfo');
+  const plan=getPlan(G.plan);
+  if(G.paid){cd.textContent='✅ Pago listo. Solicita tu retiro.';ni.textContent='';}
+  else if(isInvested()&&lbl!=='PAYOUT'){
+    const duration=plan.dias*DAY;
+    const rem=Math.max(0,(G.last_pay||0)+duration-Date.now());
+    const d=Math.floor(rem/DAY);
+    const h=String(Math.floor((rem%DAY)/3600000)).padStart(2,'0');
+    const mn=String(Math.floor(rem%3600000/60000)).padStart(2,'0');
+    const s=String(Math.floor(rem%60000/1000)).padStart(2,'0');
+    cd.textContent=d>0?`pago en ${d}d ${h}:${mn}:${s}`:`pago en ${h}:${mn}:${s}`;
+    ni.textContent=`${plan.icon} ${plan.name} · Recibirás $${fmt(G.inv*(1+plan.rate))} USDT (+${plan.rate*100}%)`;
+  } else if(lbl==='PAYOUT'){cd.textContent=`💰 ¡Pagado! $${fmt(G.inv*(1+plan.rate))} USDT`;ni.textContent='';}
+  else if(G.deposited>0){cd.textContent='💳 Saldo listo — elige tu plan e invierte 👇';ni.textContent='';}
+  else{cd.textContent='🎁 Cálmalo con USDT y te dará un regalo';ni.textContent='';}
+}
+
+let selectedPlan='p1';
+function selectPlan(p){
+  selectedPlan=p;
+  ['p1','p2','p3'].forEach(id=>{
+    const el=document.getElementById('plan-'+id);
+    if(el)el.classList.toggle('selected',id===p);
+  });
+}
+
+let activeP=null;
+function closeAllP(){['info-panel','hist-panel'].forEach(id=>{$(id).style.display='none';});activeP=null;}
+function toggleP(id){if(activeP===id){closeAllP();}else{closeAllP();$(id).style.display='block';activeP=id;}}
+
+// ── INVEST ────────────────────────────────────────────────────────────────────
+async function invest(){
+  if(!currentUser){toast('Inicia sesión primero');return;}
+  if(G.deposited<=0){toast('No tienes saldo depositado');return;}
+  if(G.inv>0&&!G.paid){toast('Ya tienes una inversión activa');return;}
+  if(G.paid){toast('Retira tus ganancias primero');return;}
+  const v=parseFloat($('amtInput').value)||G.deposited;
+  const monto=Math.min(v,G.deposited);
+  if(monto<=0){toast('Monto inválido');return;}
+  const plan=getPlan(selectedPlan);
+  if(monto<plan.min){toast(`Mínimo $${plan.min} USDT para este plan`);return;}
+  G.inv=monto;
+  G.deposited=parseFloat((G.deposited-monto).toFixed(2));
+  G.plan=selectedPlan;
+  G.last_pay=Date.now();G.paid=false;
+  Audio.coin();emitCoins(_bg.bx,_bg.by-_bg.R*.3,22);
+  toast(`🛌 ¡Bebé durmiendo! En ${plan.dias} día${plan.dias>1?'s':''} recibes $${fmt(monto*(1+plan.rate))} USDT (+${plan.rate*100}%)`);
+  $('amtInput').value='';
+  await saveUserData();
+  renderUI();
+}
+
+async function checkPayout(){
+  if(!currentUser||!isInvested()||G.paid)return;
+  if(!G.last_pay){G.last_pay=Date.now();await saveUserData();return;}
+  const plan=getPlan(G.plan);
+  const duration=plan.dias*DAY;
+  if(Date.now()-G.last_pay>=duration){
+    const payout=G.inv*(1+plan.rate),ganancia=G.inv*plan.rate;
+    G.bal+=payout;G.profit+=ganancia;G.paid=true;
+    fx.payUntil=Date.now()+3500;
+    await sb.from('historial').insert({user_id:currentUser.id,amt:payout,ganancia,plan:G.plan});
+    await saveUserData();
+    Audio.reward();emitCoins(W/2,H*.22,44);
+    renderUI();loadHist();
+    toast(`🎉 ¡PAGADO! $${fmt(payout)} USDT disponibles`);
+  }
+}
+
+// ── RETIRO ────────────────────────────────────────────────────────────────────
+function openDeposito(){closeAllP();$('deposito-panel').style.display='flex';}
+function closeDeposito(){$('deposito-panel').style.display='none';}
+function copyWallet(){
+  navigator.clipboard.writeText('7LwvYCoUSL1DQtAeCAjPdcUFFjRynDfiJ71dU3Dt4RSc').then(()=>toast('✅ Wallet copiada')).catch(()=>toast('Copia: 7LwvYCoUSL1DQtAeCAjPdcUFFjRynDfiJ71dU3Dt4RSc'));
+}
+async function enviarDeposito(){
+  if(!currentUser)return;
+  const amt=parseFloat($('dAmt').value);
+  const hash=$('dHash').value.trim();
+  if(!amt||amt<=0){toast('Ingresa la cantidad enviada');return;}
+  if(!hash||hash.length<10){toast('Ingresa el hash de la transacción');return;}
+  const {error}=await sb.from('depositos').insert({user_id:currentUser.id,email:currentUser.email,amt,hash,estado:'pendiente'});
+  if(error){toast('Error al enviar. Intenta de nuevo.');return;}
+  closeDeposito();
+  toast('✅ Solicitud enviada. Acreditamos en menos de 24h');
+  $('dAmt').value='';$('dHash').value='';
+}
+function openRetiro(){closeAllP();$('rBalDisplay').textContent=fmt(G.bal)+' USDT';$('retiro-panel').style.display='flex';}
+function closeRetiro(){$('retiro-panel').style.display='none';}
+async function confirmarRetiro(){
+  if(!currentUser)return;
+  const wallet=$('rWallet').value.trim(),amt=parseFloat($('rAmt').value);
+  if(!wallet||wallet.length<10){toast('Ingresa tu wallet correctamente');return;}
+  if(!amt||amt<=0||amt>G.bal){toast(`Monto inválido. Ganancias: $${fmt(G.bal)}`);return;}
+  await sb.from('retiros').insert({user_id:currentUser.id,wallet,amt,estado:'pendiente'});
+  closeRetiro();toast(`✅ Solicitud enviada. Procesamos $${fmt(amt)} USDT en 24h`);
+  $('rWallet').value='';$('rAmt').value='';
+}
+
+// ── ADMIN ─────────────────────────────────────────────────────────────────────
+function loginAdmin(){if($('aPass').value===ADMIN_PASS){$('admin-login').style.display='none';openAdmin();}else{toast('Contraseña incorrecta');$('aPass').value='';}}
+function closeAdmin(){$('admin-panel').style.display='none';}
+
+async function openAdmin(){
+  $('admin-panel').style.display='flex';
+  // Load all users
+  const {data:users}=await sb.from('usuarios').select('*').order('created_at',{ascending:false});
+  const {data:depositos}=await sb.from('depositos').select('*').eq('estado','pendiente').order('created_at',{ascending:false});
+  // Render depositos
+  const dl=$('aDepList');
+  if(!depositos?.length){dl.innerHTML='<div style="color:#445;font-size:12px;padding:4px 0">Sin solicitudes de depósito.</div>';}
+  else dl.innerHTML=depositos.map(d=>{
+    const fecha=new Date(d.created_at).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return`<div class="wr">
+      <div class="wri"><span class="wru">${d.email||d.user_id?.slice(0,12)}</span><span class="wra">$${fmt(d.amt)} USDT</span></div>
+      <div class="wrw" style="color:#5dffa6;font-size:10px;">Hash: ${d.hash}</div>
+      <div class="wrd">${fecha} <span class="bp">PENDIENTE</span></div>
+      <div class="wrbr">
+        <button class="wbtn ok" onclick="approveDeposit(${d.id},'${d.user_id}',${d.amt})">✓ Verificado — Acreditar</button>
+        <button class="wbtn no" onclick="rejectDeposit(${d.id})">✕ Rechazar</button>
+      </div>
+    </div>`;
+  }).join('');
+  const totalInv=users?.reduce((s,u)=>s+(u.inv||0),0)||0;
+  const totalProfit=users?.reduce((s,u)=>s+(u.profit||0),0)||0;
+  $('as-users').textContent=users?.length||0;
+  $('as-inv').textContent='$'+fmt(totalInv);
+  $('as-profit').textContent='$'+fmt(totalProfit);
+  $('as-pend').textContent=retiros?.length||0;
+  // Render users
+  const ul=$('aUserList');
+  if(!users?.length){ul.innerHTML='<div style="color:#445;font-size:12px">Sin usuarios.</div>';}
+  else ul.innerHTML=users.map(u=>`
+    <div class="ucard">
+      <div class="uemail">${u.email||'Sin email'}</div>
+      <div class="ugrid">
+        <div class="ustat"><div class="usl">Depositado</div><div class="usv">$${fmt(u.deposited)}</div></div>
+        <div class="ustat"><div class="usl">Invertido</div><div class="usv">$${fmt(u.inv)}</div></div>
+        <div class="ustat"><div class="usl">Ganancias</div><div class="usv" style="color:#5dffa6">$${fmt(u.profit)}</div></div>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <button class="wbtn ok" style="font-size:10px;height:28px;" onclick="adminDeposit('${u.id}','${u.email}')">+ Acreditar</button>
+        <button class="wbtn no" style="font-size:10px;height:28px;" onclick="adminResetU('${u.id}','${u.email}')">Reset</button>
+      </div>
+    </div>`).join('');
+  // Render retiros
+  const wl=$('aWList');
+  if(!retiros?.length){wl.innerHTML='<div style="color:#445;font-size:12px;padding:4px 0">Sin solicitudes pendientes.</div>';}
+  else wl.innerHTML=retiros.map(r=>{
+    const fecha=new Date(r.created_at).toLocaleString('es',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return`<div class="wr">
+      <div class="wri"><span class="wru">${r.user_id?.slice(0,8)}…</span><span class="wra">$${fmt(r.amt)} USDT</span></div>
+      <div class="wrw">→ ${r.wallet}</div>
+      <div class="wrd">${fecha} <span class="bp">PENDIENTE</span></div>
+      <div class="wrbr"><button class="wbtn ok" onclick="approveW(${r.id},'${r.user_id}',${r.amt})">✓ Aprobar</button><button class="wbtn no" onclick="rejectW(${r.id})">✕ Rechazar</button></div>
+    </div>`;
+  }).join('');
+}
+
+async function adminDeposit(uid,email){
+  const v=parseFloat(prompt(`Acreditar depósito a ${email}:\n\n¿Cuántos USDT recibiste?`,'100'));
+  if(!v||isNaN(v)||v<=0)return;
+  const {data:u}=await sb.from('usuarios').select('deposited').eq('id',uid).single();
+  const newDep=parseFloat(((u?.deposited||0)+v).toFixed(2));
+  await sb.from('usuarios').update({deposited:newDep}).eq('id',uid);
+  toast(`✅ $${fmt(v)} USDT acreditados a ${email}`);
+  openAdmin();
+  // Reload if it's the current user
+  if(currentUser&&currentUser.id===uid){G.deposited=newDep;renderUI();}
+}
+
+async function adminResetU(uid,email){
+  if(!confirm(`¿Resetear cuenta de ${email}?`))return;
+  await sb.from('usuarios').update({deposited:0,bal:0,inv:0,profit:0,last_pay:0,paid:false,plan:'p1'}).eq('id',uid);
+  await sb.from('historial').delete().eq('user_id',uid);
+  toast(`🔄 Cuenta de ${email} reseteada`);
+  openAdmin();
+  if(currentUser&&currentUser.id===uid){G={deposited:0,bal:0,inv:0,profit:0,last_pay:0,paid:false,plan:'baby'};fx.mood=0;renderUI();}
+}
+
+async function approveDeposit(id,uid,amt){
+  if(!confirm(`¿Verificaste el hash? ¿Acreditar $${fmt(amt)} USDT?`))return;
+  await sb.from('depositos').update({estado:'aprobado'}).eq('id',id);
+  const {data:u}=await sb.from('usuarios').select('deposited').eq('id',uid).single();
+  const newDep=parseFloat(((u?.deposited||0)+amt).toFixed(2));
+  await sb.from('usuarios').update({deposited:newDep}).eq('id',uid);
+  toast(`✅ $${fmt(amt)} USDT acreditados`);openAdmin();
+  if(currentUser&&currentUser.id===uid){G.deposited=newDep;renderUI();}
+}
+async function rejectDeposit(id){
+  if(!confirm('¿Rechazar esta solicitud de depósito?'))return;
+  await sb.from('depositos').update({estado:'rechazado'}).eq('id',id);
+  toast('Solicitud rechazada');openAdmin();
+}
+async function approveW(id,uid,amt){
+  if(!confirm(`¿Aprobar retiro de $${fmt(amt)} USDT?`))return;
+  await sb.from('retiros').update({estado:'aprobado'}).eq('id',id);
+  const {data:u}=await sb.from('usuarios').select('bal').eq('id',uid).single();
+  await sb.from('usuarios').update({bal:Math.max(0,(u?.bal||0)-amt)}).eq('id',uid);
+  toast('✅ Retiro aprobado');openAdmin();
+  if(currentUser&&currentUser.id===uid){G.bal=Math.max(0,G.bal-amt);renderUI();}
+}
+
+async function rejectW(id){
+  if(!confirm('¿Rechazar solicitud?'))return;
+  await sb.from('retiros').update({estado:'rechazado'}).eq('id',id);
+  toast('Solicitud rechazada');openAdmin();
+}
+
+// ── ENTRY ─────────────────────────────────────────────────────────────────────
+function enterApp(){
+  const el=document.getElementById('entry');
+  el.style.opacity='0';el.style.transition='opacity .3s';
+  setTimeout(()=>el.style.display='none',350);
+  // Unlock audio — must be inside user gesture
+  Audio.resume();
+  // Check session
+  sb.auth.getSession().then(({data})=>{
+    if(data?.session?.user){
+      currentUser=data.session.user;
+      $('userEmail').textContent=currentUser.email||'';
+      loadUserData().then(()=>{
+        if(!isInvested())Audio.setMode('cry');
+      });
+    } else {
+      $('auth-screen').style.display='flex';
+      Audio.setMode('cry');
+    }
+  });
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────────────────
+
+// ── ADMIN ACCESS VIA URL PARAM ───────────────────────────────────────────────
+if(new URLSearchParams(location.search).get('x')==='bebedinero'){
+  // Auto-open admin login when URL has ?x=bebedinero
+  setTimeout(()=>{$('admin-login').style.display='flex';$('aPass').value='';},800);
+}
+$('depositoBtn').onclick=openDeposito;
+$('dCancel').onclick=closeDeposito;
+$('dOk').onclick=enviarDeposito;
+$('investBtn').onclick=invest;
+$('amtInput').addEventListener('keydown',e=>{if(e.key==='Enter')invest();});
+$('infoBtn').onclick=()=>toggleP('info-panel');
+$('histBtn').onclick=()=>{toggleP('hist-panel');if(activeP==='hist-panel')loadHist();};
+$('retiroBtn').onclick=openRetiro;
+$('muteBtn').onclick=()=>{const m=Audio.toggleMute();$('muteBtn').textContent=m?'🔇 Muted':'🔊 Sonido';};
+$('rCancel').onclick=closeRetiro;
+$('rOk').onclick=confirmarRetiro;
+$('aLoginBtn').onclick=loginAdmin;
+$('aLoginCancel').onclick=()=>$('admin-login').style.display='none';
+$('aPass').addEventListener('keydown',e=>{if(e.key==='Enter')loginAdmin();});
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('dblclick',e=>e.preventDefault());
+
+// ── LOOP ──────────────────────────────────────────────────────────────────────
+renderUI();
+let last=performance.now(),payAcc=0,uiAcc=0,lastAM='';
+function frame(now){
+  let dt=(now-last)/1000;last=now;if(dt>.06)dt=.06;
+  const t=now/1000;
+  const lbl=stateLabel();
+  const moodTgt=lbl==='DURMIENDO'||lbl==='PAYOUT'?1:lbl==='PAGADO'?.5:0;
+  fx.mood=clamp(fx.mood+(moodTgt-fx.mood)*Math.min(1,dt*1.6),0,1);
+  payAcc+=dt;if(payAcc>1){payAcc=0;checkPayout();}
+  uiAcc+=dt;if(uiAcc>.5){uiAcc=0;renderUI();}
+  const am=lbl==='DURMIENDO'||lbl==='PAYOUT'?'sleep':lbl==='PAGADO'?'silent':'cry';
+  if(am!==lastAM){lastAM=am;Audio.setMode(am);}
+  ctx.clearRect(0,0,W,H);drawBG(t);stepParticles(dt,t);drawBaby(t,dt);drawParticles();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
